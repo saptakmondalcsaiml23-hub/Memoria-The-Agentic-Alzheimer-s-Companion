@@ -1,0 +1,59 @@
+namespace: memoria
+
+images:
+  gateway: ghcr.io/owner/memoria-gateway-service:latest
+  telemetry: ghcr.io/owner/memoria-telemetry-service:latest
+  orchestrator: ghcr.io/owner/memoria-orchestrator-service:latest
+  identity: ghcr.io/owner/memoria-identity-service:latest
+
+replicas:
+  gateway: 2
+  telemetry: 3
+  orchestrator: 3
+  identity: 2
+
+resources:
+  default:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+env:
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: memoria
+  POSTGRES_USER: memoria
+  POSTGRES_PASSWORD: memoria
+  JWT_ISSUER_URI: http://keycloak:8080/realms/memoria
+
+service:
+  gateway:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+  telemetry:
+    port: 8081
+  orchestrator:
+    port: 8082
+  identity:
+    port: 8083
+
+ingress:
+  enabled: false
+  className: nginx
+  host: memoria.local
+  path: /
+  tls:
+    enabled: false
+    secretName: memoria-gateway-tls
+
+hpa:
+  telemetry:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    cpuUtilization: 65

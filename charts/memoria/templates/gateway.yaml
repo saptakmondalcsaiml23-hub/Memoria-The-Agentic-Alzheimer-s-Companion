@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: gateway-service
+    {{- include "memoria.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.gateway }}
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+        {{- include "memoria.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: gateway-service
+        image: {{ .Values.images.gateway }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.service.gateway.targetPort }}
+        resources:
+          {{- toYaml .Values.resources.default | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: gateway-service
+    {{- include "memoria.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.gateway.type }}
+  selector:
+    app: gateway-service
+  ports:
+  - name: http
+    port: {{ .Values.service.gateway.port }}
+    targetPort: {{ .Values.service.gateway.targetPort }}

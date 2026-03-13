@@ -1,0 +1,30 @@
+replicas:
+  gateway: 3
+  telemetry: 6
+  orchestrator: 4
+  identity: 3
+
+resources:
+  default:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+hpa:
+  telemetry:
+    enabled: true
+    minReplicas: 6
+    maxReplicas: 30
+    cpuUtilization: 60
+
+ingress:
+  enabled: true
+  className: nginx
+  host: memoria.example.com
+  path: /
+  tls:
+    enabled: true
+    secretName: memoria-gateway-tls

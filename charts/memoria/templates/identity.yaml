@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: identity-service
+    {{- include "memoria.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.identity }}
+  selector:
+    matchLabels:
+      app: identity-service
+  template:
+    metadata:
+      labels:
+        app: identity-service
+        {{- include "memoria.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: identity-service
+        image: {{ .Values.images.identity }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.service.identity.port }}
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://{{ .Values.env.POSTGRES_HOST }}:{{ .Values.env.POSTGRES_PORT }}/{{ .Values.env.POSTGRES_DB }}
+        - name: SPRING_DATASOURCE_USERNAME
+          value: {{ .Values.env.POSTGRES_USER | quote }}
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: {{ .Values.env.POSTGRES_PASSWORD | quote }}
+        - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+          value: {{ .Values.env.JWT_ISSUER_URI | quote }}
+        resources:
+          {{- toYaml .Values.resources.default | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: identity-service
+    {{- include "memoria.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: identity-service
+  ports:
+  - name: http
+    port: {{ .Values.service.identity.port }}
+    targetPort: {{ .Values.service.identity.port }}

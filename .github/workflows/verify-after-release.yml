@@ -1,0 +1,94 @@
+name: Verify After Release
+
+on:
+  workflow_run:
+    workflows: ["Release Images"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+  packages: read
+  attestations: read
+
+jobs:
+  verify:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - gateway-service
+          - telemetry-service
+          - orchestrator-service
+          - identity-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Download digest artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: digest-${{ matrix.service }}
+          path: ./.release-digest
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify signature + attestations
+        env:
+          OWNER: ${{ github.event.workflow_run.repository.owner.login }}
+          SERVICE: ${{ matrix.service }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DIGEST="$(cat ./.release-digest/digest-${{ matrix.service }}.txt | tr -d '[:space:]')"
+          export DIGEST
+          chmod +x scripts/verify-release-artifacts.sh
+          ./scripts/verify-release-artifacts.sh
+
+  notify-on-failure:
+    needs: verify
+    if: ${{ needs.verify.result == 'failure' && github.run_attempt == 1 && secrets.SLACK_WEBHOOK_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MESSAGE: |
+            Memoria post-release verification failed
+            repo: ${{ github.repository }}
+            branch: ${{ github.event.workflow_run.head_branch }}
+            workflow: Verify After Release
+            attempt: ${{ github.run_attempt }}
+            source-run-id: ${{ github.event.workflow_run.id }}
+            actor: ${{ github.actor }}
+            run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          chmod +x scripts/send-webhook-notification.sh
+          WEBHOOK_URL="$SLACK_WEBHOOK_URL" MESSAGE="$MESSAGE" ./scripts/send-webhook-notification.sh
+
+  notify-on-failure-teams:
+    needs: verify
+    if: ${{ needs.verify.result == 'failure' && github.run_attempt == 1 && secrets.TEAMS_WEBHOOK_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Teams notification
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          MESSAGE: |
+            Memoria post-release verification failed
+            repo: ${{ github.repository }}
+            branch: ${{ github.event.workflow_run.head_branch }}
+            workflow: Verify After Release
+            attempt: ${{ github.run_attempt }}
+            source-run-id: ${{ github.event.workflow_run.id }}
+            actor: ${{ github.actor }}
+            run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          chmod +x scripts/send-webhook-notification.sh
+          WEBHOOK_URL="$TEAMS_WEBHOOK_URL" MESSAGE="$MESSAGE" ./scripts/send-webhook-notification.sh

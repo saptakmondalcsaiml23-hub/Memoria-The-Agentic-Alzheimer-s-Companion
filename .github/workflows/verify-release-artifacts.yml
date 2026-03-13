@@ -1,0 +1,46 @@
+name: Verify Release Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: "GitHub owner/org for GHCR image path"
+        required: false
+        default: ""
+      service:
+        description: "Service image to verify"
+        required: true
+        type: choice
+        options:
+          - gateway-service
+          - telemetry-service
+          - orchestrator-service
+          - identity-service
+      digest:
+        description: "Image digest in form sha256:<64-hex>"
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+  attestations: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Verify signature + attestations
+        env:
+          OWNER: ${{ inputs.owner != '' && inputs.owner || github.repository_owner }}
+          SERVICE: ${{ inputs.service }}
+          DIGEST: ${{ inputs.digest }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/verify-release-artifacts.sh
+          ./scripts/verify-release-artifacts.sh

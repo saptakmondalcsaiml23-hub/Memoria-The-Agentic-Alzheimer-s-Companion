@@ -1,0 +1,43 @@
+name: Load Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Gateway base URL (for example https://memoria.example.com)"
+        required: true
+        default: "http://localhost:8080"
+      duration:
+        description: "Test duration per scenario"
+        required: true
+        default: "2m"
+      telemetry_vus:
+        description: "Virtual users for telemetry ingest"
+        required: true
+        default: "20"
+      analyze_vus:
+        description: "Virtual users for orchestrator analyze"
+        required: true
+        default: "10"
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run load tests
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          DURATION: ${{ inputs.duration }}
+          VUS_TELEMETRY: ${{ inputs.telemetry_vus }}
+          VUS_ANALYZE: ${{ inputs.analyze_vus }}
+        run: |
+          chmod +x scripts/run-k6.sh
+          ./scripts/run-k6.sh

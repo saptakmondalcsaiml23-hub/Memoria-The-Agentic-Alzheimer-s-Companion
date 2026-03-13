@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: telemetry-service
+    {{- include "memoria.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas.telemetry }}
+  selector:
+    matchLabels:
+      app: telemetry-service
+  template:
+    metadata:
+      labels:
+        app: telemetry-service
+        {{- include "memoria.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: telemetry-service
+        image: {{ .Values.images.telemetry }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.service.telemetry.port }}
+        env:
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: {{ .Values.env.KAFKA_BOOTSTRAP_SERVERS | quote }}
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://{{ .Values.env.POSTGRES_HOST }}:{{ .Values.env.POSTGRES_PORT }}/{{ .Values.env.POSTGRES_DB }}
+        - name: SPRING_DATASOURCE_USERNAME
+          value: {{ .Values.env.POSTGRES_USER | quote }}
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: {{ .Values.env.POSTGRES_PASSWORD | quote }}
+        resources:
+          {{- toYaml .Values.resources.default | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: telemetry-service
+    {{- include "memoria.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: telemetry-service
+  ports:
+  - name: http
+    port: {{ .Values.service.telemetry.port }}
+    targetPort: {{ .Values.service.telemetry.port }}
+---
+{{- if .Values.hpa.telemetry.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: telemetry-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: telemetry-service
+    {{- include "memoria.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: telemetry-service
+  minReplicas: {{ .Values.hpa.telemetry.minReplicas }}
+  maxReplicas: {{ .Values.hpa.telemetry.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.hpa.telemetry.cpuUtilization }}
+{{- end }}

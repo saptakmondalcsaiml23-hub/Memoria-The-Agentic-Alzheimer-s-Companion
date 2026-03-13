@@ -1,0 +1,196 @@
+openapi: 3.0.3
+info:
+  title: Memoria API
+  version: 1.0.0
+  description: API contracts for telemetry ingestion, clinical evaluation, and therapy generation.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/telemetry/ingest:
+    post:
+      summary: Ingest telemetry events
+      operationId: ingestTelemetry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelemetryIngestRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryIngestResponse'
+  /api/v1/clinical/vision-eval:
+    post:
+      summary: Evaluate clinical image input (Clock Drawing Test)
+      operationId: clinicalVisionEval
+      parameters:
+        - in: query
+          name: patientId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Vision evaluation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalVisionEvalResponse'
+  /api/v1/therapy/generate:
+    get:
+      summary: Generate personalized therapy payload
+      operationId: generateTherapy
+      parameters:
+        - in: query
+          name: patientId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: mood
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Therapy payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TherapyPayload'
+  /api/v1/orchestrator/intervene:
+    post:
+      summary: Execute diagnosis, therapy, and escalation orchestration
+      operationId: orchestratorIntervene
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterventionRequest'
+      responses:
+        '200':
+          description: Intervention execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterventionResponse'
+components:
+  schemas:
+    TelemetryEvent:
+      type: object
+      required:
+        - metricType
+        - value
+      properties:
+        metricType:
+          type: string
+        value:
+          type: number
+    TelemetryIngestRequest:
+      type: object
+      required:
+        - patientId
+        - timestamp
+        - events
+      properties:
+        patientId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryEvent'
+    TelemetryIngestResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        correlationId:
+          type: string
+        acceptedAt:
+          type: string
+          format: date-time
+    TherapyPayload:
+      type: object
+      properties:
+        patientId:
+          type: string
+        mode:
+          type: string
+        title:
+          type: string
+        instruction:
+          type: string
+        prompts:
+          type: array
+          items:
+            type: string
+        musicHint:
+          type: string
+    ClinicalVisionEvalResponse:
+      type: object
+      properties:
+        patientId:
+          type: string
+        assessment:
+          type: string
+        score:
+          type: integer
+        note:
+          type: string
+    InterventionRequest:
+      type: object
+      required:
+        - patientId
+        - caregiverPhone
+        - narrative
+      properties:
+        patientId:
+          type: string
+        caregiverPhone:
+          type: string
+        narrative:
+          type: string
+        preferredLanguage:
+          type: string
+    InterventionResponse:
+      type: object
+      properties:
+        diagnosis:
+          type: object
+          properties:
+            anomalyScore:
+              type: integer
+            condition:
+              type: string
+            action:
+              type: string
+            urgency:
+              type: string
+            caregiverNotify:
+              type: boolean
+        therapyMode:
+          type: string
+        caregiverNotificationSent:
+          type: boolean
+        regionalAudioPrepared:
+          type: boolean

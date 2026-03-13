@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memoria/contracts/diagnosis-output.schema.json",
+  "title": "DiagnosisOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["anomaly_score", "condition", "action", "urgency", "caregiver_notify"],
+  "properties": {
+    "anomaly_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "condition": {
+      "type": "string",
+      "enum": ["stable", "cognitive_looping", "sundowning_anxiety", "panic_attack", "requires_review"]
+    },
+    "action": {
+      "type": "string",
+      "enum": ["none", "launch_grounding_trivia", "trigger_music_therapy", "notify_caregiver", "offline_fallback"]
+    },
+    "urgency": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "caregiver_notify": {
+      "type": "boolean"
+    }
+  }
+}

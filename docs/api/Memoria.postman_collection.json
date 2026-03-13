@@ -1,0 +1,162 @@
+{
+  "info": {
+    "name": "Memoria API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Memoria authenticated and unauthenticated API workflows"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Admin Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/x-www-form-urlencoded"}
+            ],
+            "url": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "grant_type", "value": "password"},
+                {"key": "client_id", "value": "{{client_id}}"},
+                {"key": "username", "value": "admin"},
+                {"key": "password", "value": "admin"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('admin_token', json.access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Caregiver Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/x-www-form-urlencoded"}
+            ],
+            "url": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "grant_type", "value": "password"},
+                {"key": "client_id", "value": "{{client_id}}"},
+                {"key": "username", "value": "caregiver"},
+                {"key": "password", "value": "caregiver"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('caregiver_token', json.access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Identity",
+      "item": [
+        {
+          "name": "Create Caregiver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": "{{gateway_url}}/api/v1/caregivers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"c-postman\",\n  \"phoneNumber\": \"+911234567890\",\n  \"preferences\": \"regional_music\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{admin_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": "{{gateway_url}}/api/v1/patients",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"p-postman\",\n  \"demographic\": \"female_70_plus\",\n  \"region\": \"WB\",\n  \"caregiverId\": \"c-postman\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Patient (Caregiver)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{caregiver_token}}"}
+            ],
+            "url": "{{gateway_url}}/api/v1/patients/p-postman"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Telemetry and Intervention",
+      "item": [
+        {
+          "name": "Ingest Telemetry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": "{{gateway_url}}/api/v1/telemetry/ingest",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"p-postman\",\n  \"timestamp\": \"2026-03-13T18:10:00Z\",\n  \"events\": [\n    {\"metricType\": \"accel_variance_10s\", \"value\": 4.9},\n    {\"metricType\": \"app_switch_rate_1m\", \"value\": 14}\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Intervene",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": "{{gateway_url}}/api/v1/orchestrator/intervene",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"p-postman\",\n  \"caregiverPhone\": \"+911234567890\",\n  \"narrative\": \"Rapid UI switching with tremor and panic behavior\",\n  \"preferredLanguage\": \"en\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "gateway_url", "value": "http://localhost:8080"},
+    {"key": "keycloak_url", "value": "http://localhost:8084"},
+    {"key": "realm", "value": "memoria"},
+    {"key": "client_id", "value": "memoria-api"},
+    {"key": "admin_token", "value": ""},
+    {"key": "caregiver_token", "value": ""}
+  ]
+}

@@ -1,0 +1,9 @@
+replicas:
+  gateway: 1
+  telemetry: 1
+  orchestrator: 1
+  identity: 1
+
+hpa:
+  telemetry:
+    enabled: false

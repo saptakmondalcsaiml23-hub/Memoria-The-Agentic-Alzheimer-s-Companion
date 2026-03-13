@@ -1,0 +1,35 @@
+{
+  "realm": "memoria",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {"name": "admin"},
+      {"name": "caregiver"}
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "memoria-api",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "admin", "temporary": false}],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "caregiver",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "caregiver", "temporary": false}],
+      "realmRoles": ["caregiver"]
+    }
+  ]
+}

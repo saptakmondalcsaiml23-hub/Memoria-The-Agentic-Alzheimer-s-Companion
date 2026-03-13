@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: telemetry-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/telemetry/**
+        - id: orchestrator-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/therapy/**,/api/v1/clinical/**,/api/v1/orchestrator/**
+        - id: identity-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/v1/patients/**,/api/v1/caregivers/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

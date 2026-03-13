@@ -1,0 +1,52 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: orchestrator-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:memoria}
+    username: ${POSTGRES_USER:memoria}
+    password: ${POSTGRES_PASSWORD:memoria}
+
+memoria:
+  ai:
+    api-key: ${GEMINI_API_KEY:replace_me}
+    model-flash: gemini-3-flash
+    model-pro: gemini-3-pro
+    base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+  twilio:
+    account-sid: ${TWILIO_ACCOUNT_SID:replace_me}
+    auth-token: ${TWILIO_AUTH_TOKEN:replace_me}
+    from-number: ${TWILIO_FROM_NUMBER:+10000000000}
+    base-url: ${TWILIO_BASE_URL:https://api.twilio.com}
+  bhashini:
+    api-key: ${BHASHINI_API_KEY:replace_me}
+    base-url: ${BHASHINI_BASE_URL:https://dhruva-api.bhashini.gov.in}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      geminiClient:
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+      twilioClient:
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+      bhashiniClient:
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+  timelimiter:
+    instances:
+      geminiClient:
+        timeoutDuration: 2s
+      twilioClient:
+        timeoutDuration: 3s
+      bhashiniClient:
+        timeoutDuration: 3s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
